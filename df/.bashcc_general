@@ -47,7 +47,7 @@ genpass() {
 # https://serverfault.com/questions/59262/bash-print-stderr-in-red-color
 colorerr()(set -o pipefail;"$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2));
 
-# \__________________________________/
+# \_____________________________/
 # |===||   gimme [label]   ||===|
 # Recall code snippets for common shell commands
 gimme() {
