@@ -12,7 +12,7 @@
 
 ## File structure ## ---------------------------------------- ##
 #  - /dotfiles.sh :: This script
-#  - /df/.[*] :: Dotfiles for default installation
+#  - /df/.* :: Dotfiles for default installation
 
 ## TODO ## -------------------------------------------------- ##
 #  -- Handle dot-directory imports as well
