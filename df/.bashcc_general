@@ -31,23 +31,6 @@ alias grep_invert='grep -v'
 alias grep_regex='grep -E'
 
 
-# \_________________________________________/
-# |===||   wpreset [interface=wlan0]   ||===|
-# Sets WLAN interface down and back up.
-wreset() {
-  if [[ -z "$1" ]]; then
-    sudo rfkill unblock wlan &&
-    sudo ip link set wlan0 down &&
-    sudo ip link set wlan0 up &&
-    echo "Interface wlan0 reset.";
-  else
-    sudo rfkill unblock wlan &&
-    sudo ip link set $1 down &&
-    sudo ip link set $1 up &&
-    echo "Interface $1 reset.";
-  fi
-}
-
 # \___________________________________/
 # |===||   genpass [length=16]   ||===|
 # Generate a strong random password (default length 16)
