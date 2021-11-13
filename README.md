@@ -2,5 +2,5 @@
 Personal dotfiles installer/updater
 
 ### File structure
-- /dotfiles.sh  ::  The installer/updater script
+- /dotfiles  ::  The installer/updater script
 - /df/.*  ::  Dotfiles for default installation

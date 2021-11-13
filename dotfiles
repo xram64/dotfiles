@@ -11,7 +11,7 @@
 ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
 
 ## File structure ## ---------------------------------------- ##
-#  - /dotfiles.sh :: This script
+#  - /dotfiles :: This script
 #  - /df/.* :: Dotfiles for default installation
 
 ## TODO ## -------------------------------------------------- ##
