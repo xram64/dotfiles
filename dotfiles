@@ -1,0 +1,367 @@
+#!/bin/bash
+
+## __________________________________________________________ ##
+## ---------------------------------------------------------- ##
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#  dotfiles 1.0
+#  xram - 11/6/21
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#  Personal dotfiles installer/updater
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## File structure ## ---------------------------------------- ##
+#  - /dotfiles.sh :: This script
+#  - /df/.[*] :: Dotfiles for default installation
+
+## TODO ## -------------------------------------------------- ##
+#  -- Handle dot-directory imports as well
+#  -- Make sure file ownership and permissions are
+#       correct for newly copied dotfiles
+#  -- Add check for newer version of files before
+#       copying in 'update' mode
+
+## ---------------------------------------------------------- ##
+## ========================================================== ##
+
+
+#/\#-------------#/\#
+#  |  Constants  |  #
+#\/#-------------#\/#
+
+## Safe mode for testing ##########
+## (does not perform file ops) ####
+SAFEMODE=0  # set =1 to enable ####
+###################################
+
+# Working directory of this script
+WD=$(dirname $0)
+
+# Default flags
+VERBOSE=0
+
+# Options
+unset OPT_USER
+
+# Message level prefixes
+M_MAIN='[Main] '
+M_INFO='[Info] '
+M_VERB='[Verbose] '
+M_ERR='[Error] '
+M_SAFE='[SAFE] '
+
+# Other prefixes
+P_INPUT='  : '
+
+
+# Macros for verbose file operation success/fail messages.
+# Must use immediately after operation to save return value.
+# Usage: 'eval $MACRO'
+MACRO_VERBOSECOPY='ret=$?; if [ $VERBOSE -eq 1 ]; then [[ $ret -eq 0 ]] && echo "Copy successful!" || echo "Copy failed!"; fi'
+MACRO_VERBOSEBACKUP='ret=$?; if [ $VERBOSE -eq 1 ]; then [[ $ret -eq 0 ]] && echo "Backup successful!" || echo "Backup failed!"; fi'
+MACRO_VERBOSEDELETE='ret=$?; if [ $VERBOSE -eq 1 ]; then [[ $ret -eq 0 ]] && echo "Delete successful!" || echo "Delete failed!"; fi'
+
+
+#/\#-------------#/\#
+#  |  Functions  |  #
+#\/#-------------#\/#
+
+# Retrieve user input and return 0=y or 1=n
+# Usage: '_getinput && confirmed=1 || confirmed=0'
+_getinput () {
+    while true; do
+        echo -n "$P_INPUT"
+        read choice
+        case $choice in
+            [Yy] | [Yy][Ee][Ss] ) return 0 ;;
+            [Nn] | [Nn][Oo] ) return 1 ;;
+            * ) echo -n "Enter 'y' or 'n'";;
+        esac
+    done
+}
+
+
+#===# Start of Install/Update #===#
+_mode () {
+    # Mode options
+    #   -u USER :: Install dotfiles only for the specified user's home directory
+
+
+    ##  _________  ##
+    ## || Setup || ##
+
+    # Set mode-specific variables
+    if [ $1 = 'install' ]; then
+        md_modeverb='install'
+        md_modenoun='installation'
+    elif [ $1 = 'update' ]; then
+        md_modeverb='update'
+        md_modenoun='update'
+    else
+        echo $M_ERR "Mode argument not given to function (this shouldn't happen...)."
+        exit 1
+    fi
+
+
+    echo $M_MAIN "Starting dotfiles ${md_modenoun}..."
+
+    # Construct temp backup directory name
+    BACKUP_PATH=/tmp/dotfiles_`date +%y%m%d_%H%M`
+    if [ -d $BACKUP_PATH ]; then
+        BACKUP_PATH=/tmp/dotfiles_`date +%y%m%d_%H%M%S`  # add seconds if this dir exists
+    fi
+
+    if [ $SAFEMODE -eq 1 ]; then
+        echo $M_SAFE "  |> mkdir $BACKUP_PATH"
+    else
+        ## Create backup directory ##~~~~##
+        mkdir $BACKUP_PATH
+        ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+        ret=$?
+        if [ $VERBOSE -eq 1 ]; then
+            if [ $ret -eq 0 ]; then echo $M_VERB "Created temp directory for backup files at $BACKUP_PATH."
+            else echo $M_VERB "Failed to create temp directory at $BACKUP_PATH."
+            fi
+        fi
+    fi
+
+
+    ##  ________________  ##
+    ## || Installation || ##
+
+    # Collect dotfile names from 'df/' directory (relative to WD)
+    dotfiles=()
+    for df in $(ls -A $WD/df); do
+        dotfiles+=( $df )
+    done
+    if [ $VERBOSE -eq 1 ]; then echo $M_VERB "Found ${#dotfiles[@]} dotfiles."; fi
+
+    # Create assoc. array to map usernames to directories
+    declare -A user_dirs;
+
+    # Check if we're root
+    uid=$(id | sed -r 's|^uid=([0-9]+).*$|\1|')
+    if [ $uid -eq 0 ]; then
+        user_dirs['root']='/root'
+    else
+        echo $M_INFO "Not running as root. Use 'sudo' to ensure dotfiles can be ${md_modeverb}ed in all user directories, including '/root'."
+    fi
+
+    # If we got a -u option, select only this user.
+    if [ ! -z $OPT_USER ]; then
+        if [ $OPT_USER = 'root' ]; then
+            user_dirs["root"]="/root"
+        else
+            user_dirs["$usr"]="/home/$usr"
+        fi
+    # Otherwise, enumerate users in /home folder
+    else
+        if [ ! -d /home ]; then
+            echo $M_INFO "Can't find '/home' directory. Skipping."
+        else
+            for usr in $(ls /home); do
+                user_dirs["$usr"]="/home/$usr"
+            done
+        fi
+    fi
+
+    # Check if user_dirs is still empty
+    if [ ${#user_dirs[@]} -eq 0 ]; then
+        echo $M_ERR "No valid directories found. Stopping..."
+        exit 1
+    fi
+
+    # Loop through selected user directories
+    if [ $VERBOSE -eq 1 ]; then echo $M_VERB "Copying dotfiles into user directories..."; fi
+    for usr in ${!user_dirs[@]}; do
+        dir="${user_dirs[$usr]}"
+
+        # Ask if we should copy dotfiles for this user.
+        echo -n $M_MAIN "${md_modeverb^} dotfiles for user '$usr'?"
+        _getinput && confirmed=1 || confirmed=0
+        if [ ${confirmed:-0} -eq 0 ]; then
+            # If user selected 'no', skip this user
+            continue
+        elif [ ! -w "$dir" ]; then
+            # If user selected 'yes', but user dir is not writeable, warn and skip this user
+            echo $M_ERR "Home directory of user '$usr' is not writeable. Run with 'sudo' to incude this user."
+            continue
+        fi
+
+        # Copy dotfiles into user's directory
+        for dotfile in ${dotfiles[@]}; do
+            if [ $SAFEMODE -eq 1 ]; then
+                echo $M_SAFE "  |> cp $dir/$dotfile $BACKUP_PATH/${usr}__$dotfile.bkup"
+                echo $M_SAFE "  |> cp $WD/df/$dotfile $dir/$dotfile"
+            else
+                # Backup dotfile if it already exists
+                if [ -e $dir/$dotfile ]; then
+                    if [ $VERBOSE -eq 1 ]; then echo -n $M_VERB "Backing up '$dir/$dotfile' to '$BACKUP_PATH/${usr}__$dotfile.bkup'...  "; fi
+                    ## Backup old dotfile ##~~~~~~~~~~~~~~~~~~~~~~##
+                    cp $dir/$dotfile $BACKUP_PATH/${usr}__$dotfile.bkup
+                    ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+                    eval $MACRO_VERBOSEBACKUP
+                fi
+
+                if [ $VERBOSE -eq 1 ]; then echo -n $M_VERB "Copying '$WD/df/$dotfile' to '$dir/$dotfile'...  "; fi
+                ## Copy new dotfile ##~~~~~~~~##
+                cp $WD/df/$dotfile $dir/$dotfile
+                ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+                eval $MACRO_VERBOSECOPY
+            fi
+        done
+
+
+        # Ask if we can edit .bashrc to include custom bash dotfiles, if it exists and is writeable
+        if [ -w "$dir/.bashrc" ]; then
+            echo -n $M_MAIN "Edit $usr's .bashrc to include custom bash config files?"
+            _getinput && confirmed=1 || confirmed=0
+        elif [ -e "$dir/.bashrc" ]; then
+            if [ $VERBOSE -eq 1 ]; then echo $M_VERB ".bashrc for $usr is not writeable. Skipping includes."; fi
+            confirmed=0
+        else
+            if [ $VERBOSE -eq 1 ]; then echo $M_VERB ".bashrc not found for $usr. Skipping includes."; fi
+            confirmed=0
+        fi
+
+        # Edit .bashrc if confirmation was successful
+        if [ ${confirmed:-0} -eq 1 ]; then
+            # Backup current .bashrc
+            if [ $SAFEMODE -eq 1 ]; then echo $M_SAFE "  |> cp $dir/.bashrc $BACKUP_PATH/${usr}__.bashrc.bkup";
+            else
+                if [ $VERBOSE -eq 1 ]; then echo -n $M_VERB "Backing up '$dir/.bashrc' to '$BACKUP_PATH/${usr}__.bashrc.bkup'...  "; fi
+
+                ## Backup current .bashrc ##~~~~~~~~~~~~~~~~##
+                cp $dir/.bashrc $BACKUP_PATH/${usr}__.bashrc.bkup
+                ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+                eval $MACRO_VERBOSEBACKUP
+            fi
+
+            # Collect .bashcc include file names and append to .bashrc
+            if [ $VERBOSE -eq 1 ]; then echo $M_VERB "Appending includes into '$dir/.bashrc'..."; fi
+
+            for bashcc_name in $(ls -A $WD/df | grep .bashcc_*); do
+                # Construct .bashrc include line for this file
+                bashcc_include="if [ -f ~/$bashcc_name ]; then . ~/$bashcc_name; fi"
+
+                # Search for include in current .bashrc so we don't duplicate it
+                # (-q returns exit 0 if match is found and 1 otherwise)
+                grep -q -F "$bashcc_include" $dir/.bashrc
+                if [ $? -eq 1 ]; then
+
+                    # No match, so append $bashcc_include.
+                    if [ $SAFEMODE -eq 1 ]; then echo $M_SAFE "  |> echo $bashcc_include >> $dir/.bashrc";
+                    else
+                        ## Append to .bashrc ##~~~~~~~~~~~~~##
+                        echo >> $dir/.bashrc  # newline
+                        echo "$bashcc_include" >> $dir/.bashrc
+                        ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+                    fi
+                    if [ $VERBOSE -eq 1 ]; then echo $M_VERB "Appended '$bashcc_name'."; fi
+
+                else
+                    # Match found, so we don't need to append.
+                    if [ $VERBOSE -eq 1 ]; then echo $M_VERB "'$bashcc_name' is already included. Skipping."; fi
+                fi
+            done
+        fi  #/ end of .bashrc includes
+
+    done  #/ end of user directory loop
+
+
+    ##  ___________  ##
+    ## || Cleanup || ##
+
+    # Ask to delete temp folder created for backups
+    echo -n $M_MAIN "Overwritten dotfiles were backed up to $BACKUP_PATH. Delete backups now?"
+    _getinput && confirmed=1 || confirmed=0
+
+    if [ ${confirmed:-0} -eq 1 ]; then
+
+        if [ ${BACKUP_PATH:0:4} = '/tmp' ]; then  # safety check
+            if [ $SAFEMODE -eq 1 ]; then echo $M_SAFE "  |> rm -r $BACKUP_PATH";
+            else
+                if [ $VERBOSE -eq 1 ]; then echo -n $M_VERB "Removing '$BACKUP_PATH'...  "; fi
+
+                ## Remove backup dir ##~~~~##
+                rm -r $BACKUP_PATH
+                ##~~~~~~~~~~~~~~~~~~~~~~~~~##
+                eval $MACRO_VERBOSEDELETE
+            fi
+        else
+            echo $M_ERR "Invalid temp directory '$BACKUP_PATH'! Skipping removal..."
+        fi
+
+    fi
+
+}
+##===# End of Install/Update #===##
+
+
+#===# Start of Usage #===#
+_usage () {
+    echo "Usage: ${0##*/} { install | update } [-v] [-h] [-u USER]"
+
+    echo
+
+    echo -e "Global options:"
+    echo -e " -v\tUse verbose output"
+    echo -e " -h\tPrint this help text"
+
+    echo
+
+    echo -e "Mode options:"
+    echo -e " -u USER\tInstall/update dotfiles for USER only"
+
+    echo
+
+}
+##===# End of Usage #===##
+
+
+#/\#--------#/\#
+#  |  Main  |  #
+#\/#--------#\/#
+
+# Scan for mode arguments and set flags
+for arg in $@; do
+
+    # Check for 'install' mode command and set flag if found
+    if [ $arg = 'install' ]; then
+        mode='install'
+        break
+    fi
+
+    # Check for 'update' mode command and set flag if found
+    if [ $arg = 'update' ]; then
+        mode='update'
+        break
+    fi
+
+done
+
+# Remove mode commands from positional parameter array ($@)
+set -- $(echo "$@" | sed -E 's/(install[\w]?)|(update[\w]?)//')
+
+# Parse remaining options with getopts
+while getopts 'u:d:vh' opt; do
+    case $opt in
+        u) OPT_USER=$OPTARG ;;
+        v) VERBOSE=1 ;;
+        h) _usage; exit 2 ;;
+    esac
+done
+
+
+# Launch the selected mode function
+if [ "${mode:-''}" = 'install' ] || [ "${mode:-''}" = 'update' ]; then
+    _mode "$mode"
+
+# If no mode was set, throw error and exit
+else
+    echo $M_ERR "One of {install, update} must be supplied as an argument."
+    _usage
+    exit 1
+fi
+
+exit 0
