@@ -1,0 +1,30 @@
+#################################
+##===##|                 |##===##
+#=====#|    Aliases &    |#=====#
+#=====#|    Functions    |#=====#
+##===##|                 |##===##
+#################################
+
+# Ref: https://github.com/brainfucksec/dotfiles/blob/master/.bash_aliases
+alias myipinfo='curl -s 208.95.112.1'  # (http://ip-api.com/)
+alias myip='q=$(myipinfo | grep query); [[ $q =~ ([0-9]+[.][0-9]+[.][0-9]+[.][0-9]+) ]] && echo -e "${BASH_REMATCH[1]}"'
+alias whatsmyip=myip
+alias watchip='watch -c -d -n 10 curl -s 208.95.112.1'
+
+
+# \_________________________________________/
+# |===||   wpreset [interface=wlan0]   ||===|
+# Sets WLAN interface down and back up.
+wreset() {
+  if [[ -z "$1" ]]; then
+    sudo rfkill unblock wlan &&
+    sudo ip link set wlan0 down &&
+    sudo ip link set wlan0 up &&
+    echo "Interface wlan0 reset.";
+  else
+    sudo rfkill unblock wlan &&
+    sudo ip link set $1 down &&
+    sudo ip link set $1 up &&
+    echo "Interface $1 reset.";
+  fi
+}

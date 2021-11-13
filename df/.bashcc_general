@@ -1,0 +1,91 @@
+#################################
+##===##|                 |##===##
+#=====#|    Aliases &    |#=====#
+#=====#|    Functions    |#=====#
+##===##|                 |##===##
+#################################
+
+#=# Path additions
+export PATH=$PATH:/opt
+
+#=# General aliases
+alias fuck='sudo $(history -p !!)'
+alias sa='sudo apt-get'
+alias sn='sudo nano'
+alias l='ls -FlAsh --color --group-directories-first'
+alias scheme='csi'
+alias http='http --style monokai'
+https() { http https://"$1"; }
+
+# Directory traversal shortcuts
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+
+# Suppress 'Permission denied' messages in find commands
+alias find="find 2> >(grep -v 'Permission denied' >&2)"
+
+# Grep shortcuts
+alias grep_invert='grep -v'
+alias grep_regex='grep -E'
+
+
+# \_________________________________________/
+# |===||   wpreset [interface=wlan0]   ||===|
+# Sets WLAN interface down and back up.
+wreset() {
+  if [[ -z "$1" ]]; then
+    sudo rfkill unblock wlan &&
+    sudo ip link set wlan0 down &&
+    sudo ip link set wlan0 up &&
+    echo "Interface wlan0 reset.";
+  else
+    sudo rfkill unblock wlan &&
+    sudo ip link set $1 down &&
+    sudo ip link set $1 up &&
+    echo "Interface $1 reset.";
+  fi
+}
+
+# \___________________________________/
+# |===||   genpass [length=16]   ||===|
+# Generate a strong random password (default length 16)
+# (Use only non-breaking chars to make selection easier)
+genpass() {
+    if [[ -z $1 ]]; then len="16"; else len="$1"; fi
+    < /dev/urandom tr -dc _A-Z-a-z-0-9_\@_\- | head -c${1:-$len};echo;
+}
+
+# \__________________________________/
+# |===||   colorerr [command]   ||===|
+# Color the stderr output of the following command
+# (Use to differentiate between stdout and stderr in terminal)
+# https://serverfault.com/questions/59262/bash-print-stderr-in-red-color
+colorerr()(set -o pipefail;"$@" 2> >(sed $'s,.*,\e[31m&\e[m,'>&2));
+
+# \__________________________________/
+# |===||   gimme [label]   ||===|
+# Recall code snippets for common shell commands
+gimme() {
+    labels=( 'bash-regex' )
+    labels_str=`echo ${labels[@]} | sed 's/\ /,\ /g'`  # comma-separate
+    case "$1" in
+        # [gimme bash-regex] Native Bash regex syntax with group capturing
+        bash-regex) echo 'str="foo123bar789"; [[ $str =~ ^foo([0-9]+)bar([0-9]+)$ ]] && echo -e "${BASH_REMATCH[1]} - ${BASH_REMATCH[2]}"' ;;
+
+        *) echo "Usage: gimme [LABEL]"; echo 'Labels: ' $labels_str ;;
+    esac
+}
+
+#####################################
+##===##|                     |##===##
+#=====#|     Additional      |#=====#
+#=====#|    Modifications    |#=====#
+##===##|                     |##===##
+#####################################
+
+# Terminal prompt color and text override
+export PS1="\[\e[1;95m\][\u\[\e[0;95m\]@\[\e[1;95m\]\h | \w] \[\e[1;96m\](ﾉ◕ヮ◕)ﾉ*:･ﾟ✧\[\e[m\] "
+# Terminal line continuation prompt
+export PS2=" \[\e[1;35m\]...\[\e[m\] "

@@ -1,0 +1,11 @@
+# .inputrc - user keybinds (global in /etc/inrc)
+# See readline(3readline) and `info rluserman' for more information.
+
+# Disable terminal bell
+set bell-style none
+
+# Insert an arithmetic snippet (M-e / Alt+e)
+"\ee": "echo \$((  ))\C-b\C-b\C-b"
+
+# Start a one-line python3 command (M-w / Alt+w)
+"\ew": "python3 -c \'print(  )\'\C-b\C-b\C-b"
