@@ -5,30 +5,30 @@
 ##===##|                 |##===##
 #################################
 
-#=# Path additions
+#=# Environment variables #=#
 export PATH=$PATH:/opt
+export LESS="$LESS -R -Q"  # add defaults for less (show ANSI colors, no bell)
+export LESSHISTFILE='/dev/null'  # diasble less history
 
-#=# General aliases
+#=# General aliases #=#
 alias fuck='sudo $(history -p !!)'
 alias sa='sudo apt-get'
 alias sn='sudo nano'
 alias l='ls -FlAsh --color --group-directories-first'
-alias scheme='csi'
-alias http='http --style monokai'
+alias http='http --style monokai'  # colors: monokai, native, emacs, fruity
 https() { http https://"$1"; }
+alias scheme='csi'
+alias ipython='ipython3'
 
 # Directory traversal shortcuts
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
-alias .....='cd ../../../..'
+alias ..='cd ..'; alias ...='cd ../..'; alias ....='cd ../../..'; alias .....='cd ../../../..'
 
-# Suppress 'Permission denied' messages in find commands
-alias find="find 2> >(grep -v 'Permission denied' >&2)"
-
-# Grep shortcuts
+#=# Built-in defaults and shortcuts #=#
 alias grep_invert='grep -v'
 alias grep_regex='grep -E'
+alias gdb="gdb -q"  # silence copyright info
+alias nani="nano -l -i -E -m -x"  # IDE mode (line numbers, auto-indent, tabs to spaces, mouse enabled)
+alias find="find 2> >(grep -v 'Permission denied' >&2)"  # suppress 'Permission denied' messages
 
 
 # \___________________________________/
@@ -57,7 +57,7 @@ gimme() {
         # [gimme bash-regex] Native Bash regex syntax with group capturing
         bash-if ) echo 'if [ -z $a ]; then echo "No"; else echo "Yes"; fi' ;;
         bash-regex ) echo 'str="foo123bar789"; [[ $str =~ ^foo([0-9]+)bar([0-9]+)$ ]] && echo -e "${BASH_REMATCH[1]} - ${BASH_REMATCH[2]}"' ;;
-                
+
         *) echo "Usage: gimme [LABEL]"; echo 'Labels: ' $labels_str ;;
     esac
 }
@@ -73,3 +73,6 @@ gimme() {
 export PS1="\[\e[1;95m\][\u\[\e[0;95m\]@\[\e[1;95m\]\h | \w] \[\e[1;96m\](ﾉ◕ヮ◕)ﾉ*:･ﾟ✧\[\e[m\] "
 # Terminal line continuation prompt
 export PS2=" \[\e[1;35m\]...\[\e[m\] "
+
+# Alternate prompts
+## export PS1="\[\e[1;96m\]|::\[\e[1;95m\][\u\[\e[0;95m\]@\[\e[1;95m\]\h]\[\e[1;96m\]::\[\e[1;95m\][\w]\[\e[1;96m\]::|::>\[\e[m\] "
