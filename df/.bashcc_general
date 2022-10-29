@@ -8,10 +8,9 @@
 #=# Environment variables #=#
 export PATH=$PATH:/opt
 export LESS="$LESS -R -Q"  # add defaults for less (show ANSI colors, no bell)
-export LESSHISTFILE='/dev/null'  # diasble less history
+export LESSHISTFILE='/dev/null'  # disable less history
 
 #=# General aliases #=#
-alias fuck='sudo $(history -p !!)'
 alias sa='sudo apt-get'
 alias sn='sudo nano'
 alias l='ls -FlAsh --color --group-directories-first'
