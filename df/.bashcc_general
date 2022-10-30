@@ -11,6 +11,7 @@ export LESS="$LESS -R -Q"  # add defaults for less (show ANSI colors, no bell)
 export LESSHISTFILE='/dev/null'  # disable less history
 
 #=# General aliases #=#
+alias ..='cd ..'; alias ...='cd ../..'; alias ....='cd ../../..'; alias .....='cd ../../../..'  # directory traversal shortcuts
 alias sa='sudo apt-get'
 alias sn='sudo nano'
 alias l='ls -FlAsh --color --group-directories-first'
@@ -20,10 +21,7 @@ https() { http https://"$1"; }
 alias scheme='csi'
 alias ipython='ipython3'
 
-# Directory traversal shortcuts
-alias ..='cd ..'; alias ...='cd ../..'; alias ....='cd ../../..'; alias .....='cd ../../../..'
-
-#=# Built-in defaults and shortcuts #=#
+#=# Built-in overrides and shortcuts #=#
 alias grep_invert='grep -v'
 alias grep_regex='grep -E'
 alias gdb="gdb -q"  # silence copyright info
@@ -31,6 +29,9 @@ alias nani="nano -l -i -E -m -x"  # IDE mode (line numbers, auto-indent, tabs to
 alias find="find 2> >(grep -v 'Permission denied' >&2)"  # suppress 'Permission denied' messages
 f() { find / -name *"$*"*; }  # simplified filename search on entire filesystem
 findlocal() { find / -mount -name *"$*"*; }  # simplified filename search on local filesystem, skipping mounted drives
+
+#=# Quick reference tools #=#
+colormap() { for i in {0..255}; do print -Pn "%K{$i}  %k%F{$i}${(l:3::0:)i}%f " ${${(M)$((i%6)):#3}:+$'\n'}; done }  # show ANSI color map
 
 
 # \___________________________________/
