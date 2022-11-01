@@ -15,7 +15,7 @@ alias ..='cd ..'; alias ...='cd ../..'; alias ....='cd ../../..'; alias .....='c
 alias sa='sudo apt-get'
 alias sn='sudo nano'
 alias l='ls -FlAsh --color --group-directories-first'
-alias lr='ls -R | grep ":$" | sed -e '\''s/:$//'\'' -e '\''s/[^-][^\/]*\//--/g'\'' -e '\''s/^/   /'\'' -e '\''s/-/|/'\'' | less'  # full recursive dir listing
+alias lr='ls -RA | grep ":$" | sed -e '\''s/:$//'\'' -e '\''s/[^-][^\/]*\//--/g'\'' -e '\''s/^/   /'\'' -e '\''s/-/|/'\'' | less'  # full recursive dir listing
 alias http='http --style monokai'  # colors: monokai, native, emacs, fruity
 https() { http https://"$1"; }
 alias scheme='csi'
