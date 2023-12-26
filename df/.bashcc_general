@@ -25,7 +25,7 @@ alias ipython='ipython3'
 alias grep_invert='grep -v'
 alias grep_regex='grep -E'
 alias gdb="gdb -q"  # silence copyright info
-alias nani="nano -l -i -E -m -x"  # IDE mode (line numbers, auto-indent, tabs to spaces, mouse enabled)
+alias nani="nano -l -i -m -x -E -T 4"  # IDE mode (line numbers, auto-indent, mouse enabled, convert tabs to spaces, 4-width tabs)
 alias find="find 2> >(grep -v 'Permission denied' >&2)"  # suppress 'Permission denied' messages
 f() { find / -name *"$*"*; }  # simplified filename search on entire filesystem
 findlocal() { find / -mount -name *"$*"*; }  # simplified filename search on local filesystem, skipping mounted drives
